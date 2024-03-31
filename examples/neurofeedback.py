@@ -17,6 +17,8 @@ import numpy as np  # Module that simplifies computations on matrices
 import matplotlib.pyplot as plt  # Module used for plotting
 from pylsl import StreamInlet, resolve_byprop  # Module to receive EEG data
 import utils  # Our own utility functions
+from ml import train_svmm_model, predict_with_svmm_model
+
 
 # Handy little enum to make code more readable
 
@@ -47,6 +49,10 @@ SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
 # Index of the channel(s) (electrodes) to be used
 # 0 = left ear, 1 = left forehead, 2 = right forehead, 3 = right ear
 INDEX_CHANNEL = [0]
+
+def most_frequent(List):
+    tuple_list = [tuple(item) for item in List]
+    return max(set(tuple_list), key=tuple_list.count)
 
 if __name__ == "__main__":
 
@@ -95,59 +101,120 @@ if __name__ == "__main__":
 
     try:
         # The following loop acquires data, computes band powers, and calculates neurofeedback metrics based on those band powers
+        counter =0
         while True:
+            guesses = ["","","","","","","","","",""]
+            for i in range(10):
 
-            """ 3.1 ACQUIRE DATA """
-            # Obtain EEG data from the LSL stream
-            eeg_data, timestamp = inlet.pull_chunk(
-                timeout=1, max_samples=int(SHIFT_LENGTH * fs))
+                """ 3.1 ACQUIRE DATA """
+                # Obtain EEG data from the LSL stream
+                eeg_data, timestamp = inlet.pull_chunk(
+                    timeout=1, max_samples=int(SHIFT_LENGTH * fs))
 
-            # Only keep the channel we're interested in
-            ch_data = np.array(eeg_data)[:, INDEX_CHANNEL]
+                # Only keep the channel we're interested in
+                ch_data = np.array(eeg_data)[:, INDEX_CHANNEL]
 
-            # Update EEG buffer with the new data
-            eeg_buffer, filter_state = utils.update_buffer(
-                eeg_buffer, ch_data, notch=True,
-                filter_state=filter_state)
+                # Update EEG buffer with the new data
+                eeg_buffer, filter_state = utils.update_buffer(
+                    eeg_buffer, ch_data, notch=True,
+                    filter_state=filter_state)
 
-            """ 3.2 COMPUTE BAND POWERS """
-            # Get newest samples from the buffer
-            data_epoch = utils.get_last_data(eeg_buffer,
-                                             EPOCH_LENGTH * fs)
+                """ 3.2 COMPUTE BAND POWERS """
+                # Get newest samples from the buffer
+                data_epoch = utils.get_last_data(eeg_buffer,
+                                                EPOCH_LENGTH * fs)
 
-            # Compute band powers
-            band_powers = utils.compute_band_powers(data_epoch, fs)
-            band_buffer, _ = utils.update_buffer(band_buffer,
-                                                 np.asarray([band_powers]))
-            # Compute the average band powers for all epochs in buffer
-            # This helps to smooth out noise
-            smooth_band_powers = np.mean(band_buffer, axis=0)
+                # Compute band powers
+                band_powers = utils.compute_band_powers(data_epoch, fs)
+                band_buffer, _ = utils.update_buffer(band_buffer,
+                                                    np.asarray([band_powers]))
+                # Compute the average band powers for all epochs in buffer
+                # This helps to smooth out noise
+                smooth_band_powers = np.mean(band_buffer, axis=0)
 
-            # print('Delta: ', band_powers[Band.Delta], ' Theta: ', band_powers[Band.Theta],
-            #       ' Alpha: ', band_powers[Band.Alpha], ' Beta: ', band_powers[Band.Beta])
+                #print('Delta: ', band_powers[Band.Delta], ' Theta: ', band_powers[Band.Theta],
+                    #' Alpha: ', band_powers[Band.Alpha], ' Beta: ', band_powers[Band.Beta])
+                
+                #if band_powers[Band.Alpha]>0:
+                    #print(band_powers[Band.Alpha])
+                #else:
+                    #print((band_powers[Band.Alpha])*-1)
+                
+                #if band_powers[Band.Beta]>0:
+                    #print(band_powers[Band.Beta])
+                #else:
+                    #print((band_powers[Band.Beta])*-1)
+                '''
+                if smooth_band_powers[Band.Alpha]>0:
+                    print(smooth_band_powers[Band.Alpha])
+                else:
+                    print((smooth_band_powers[Band.Alpha])*-1)
 
-            """ 3.3 COMPUTE NEUROFEEDBACK METRICS """
-            # These metrics could also be used to drive brain-computer interfaces
+                if smooth_band_powers[Band.Beta]>0:
+                    print(smooth_band_powers[Band.Beta])
+                else:
+                    print((smooth_band_powers[Band.Beta])*-1)
+                '''
 
-            # Alpha Protocol:
-            # Simple redout of alpha power, divided by delta waves in order to rule out noise
-            alpha_metric = smooth_band_powers[Band.Alpha] / \
-                smooth_band_powers[Band.Delta]
-            print('Alpha Relaxation: ', alpha_metric)
+                betaWaves = smooth_band_powers[Band.Beta]
+                alphaWaves = smooth_band_powers[Band.Alpha]
+                #print(band_powers[Band.Alpha])
 
-            # Beta Protocol:
-            # Beta waves have been used as a measure of mental activity and concentration
-            # This beta over theta ratio is commonly used as neurofeedback for ADHD
-            # beta_metric = smooth_band_powers[Band.Beta] / \
-            #     smooth_band_powers[Band.Theta]
-            # print('Beta Concentration: ', beta_metric)
+                #features_for_model = [[smooth_band_powers[Band.Beta], smooth_band_powers[Band.Alpha]]]
 
-            # Alpha/Theta Protocol:
-            # This is another popular neurofeedback metric for stress reduction
-            # Higher theta over alpha is supposedly associated with reduced anxiety
-            # theta_metric = smooth_band_powers[Band.Theta] / \
-            #     smooth_band_powers[Band.Alpha]
-            # print('Theta Relaxation: ', theta_metric)
+                features_for_model = [[betaWaves, alphaWaves]]
+                print(features_for_model)
 
+                if 'svmm_model' not in globals():  
+                    svmm_model, scaler = train_svmm_model()
+
+                if 'svmm_model' in globals():
+                    prediction = predict_with_svmm_model(svmm_model, scaler, features_for_model)
+                    #print(prediction)
+                    guesses[i]=prediction
+
+                
+
+                """ 3.3 COMPUTE NEUROFEEDBACK METRICS """
+                # These metrics could also be used to drive brain-computer interfaces
+
+                # Alpha Protocol:
+                # Simple redout of alpha power, divided by delta waves in order to rule out noise
+                #alpha_metric = smooth_band_powers[Band.Alpha] / \
+                    #smooth_band_powers[Band.Delta]
+                #print(alpha_metric)
+
+                # Beta Protocol:
+                # Beta waves have been used as a measure of mental activity and concentration
+                # This beta over theta ratio is commonly used as neurofeedback for ADHD
+                #beta_metric = smooth_band_powers[Band.Beta] / \
+                    #smooth_band_powers[Band.Theta]
+                #print(beta_metric)
+
+                # Alpha/Theta Protocol:
+                # This is another popular neurofeedback metric for stress reduction
+                # Higher theta over alpha is supposedly associated with reduced anxiety
+                # theta_metric = smooth_band_powers[Band.Theta] / \
+                #     smooth_band_powers[Band.Alpha]
+                # print('Theta Relaxation: ', theta_metric)
+            
+            most_frequent_guess = most_frequent(guesses)
+            print(most_frequent_guess)
+
+            '''
+            if most_frequent_guess =="('Airplane',)":
+                print("A")
+            elif most_frequent_guess =="('Ball Bouncing',)":
+                print("B")
+            elif most_frequent_guess=="('Calendar',)":
+                print("C")
+            else:
+                print('Error: Most Frequent Guesses = ' + str(most_frequent_guess))
+                #print("Error")
+            '''
+
+            counter+=1
+            if counter>100:
+                exit()
     except KeyboardInterrupt:
         print('Closing!')
