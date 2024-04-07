@@ -144,7 +144,7 @@ if __name__ == "__main__":
                     #print(band_powers[Band.Beta])
                 #else:
                     #print((band_powers[Band.Beta])*-1)
-                '''
+                
                 if smooth_band_powers[Band.Alpha]>0:
                     print(smooth_band_powers[Band.Alpha])
                 else:
@@ -154,7 +154,7 @@ if __name__ == "__main__":
                     print(smooth_band_powers[Band.Beta])
                 else:
                     print((smooth_band_powers[Band.Beta])*-1)
-                '''
+                
 
                 betaWaves = smooth_band_powers[Band.Beta]
                 alphaWaves = smooth_band_powers[Band.Alpha]
@@ -201,7 +201,7 @@ if __name__ == "__main__":
             most_frequent_guess = most_frequent(guesses)
             print(most_frequent_guess)
 
-            '''
+            
             if most_frequent_guess =="('Airplane',)":
                 print("A")
             elif most_frequent_guess =="('Ball Bouncing',)":
@@ -211,7 +211,7 @@ if __name__ == "__main__":
             else:
                 print('Error: Most Frequent Guesses = ' + str(most_frequent_guess))
                 #print("Error")
-            '''
+            
 
             counter+=1
             if counter>100:
