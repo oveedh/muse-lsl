@@ -59,13 +59,13 @@ if __name__ == "__main__":
     """ 1. CONNECT TO EEG STREAM """
 
     # Search for active LSL streams
-    print('Looking for an EEG stream...')
+    #print('Looking for an EEG stream...')
     streams = resolve_byprop('type', 'EEG', timeout=2)
     if len(streams) == 0:
         raise RuntimeError('Can\'t find EEG stream.')
 
     # Set active EEG stream to inlet and apply time correction
-    print("Start acquiring data")
+    #print("Start acquiring data")
     inlet = StreamInlet(streams[0], max_chunklen=12)
     eeg_time_correction = inlet.time_correction()
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     # The try/except structure allows to quit the while loop by aborting the
     # script with <Ctrl-C>
-    print('Press Ctrl-C in the console to break the while loop.')
+    #print('Press Ctrl-C in the console to break the while loop.')
 
     try:
         # The following loop acquires data, computes band powers, and calculates neurofeedback metrics based on those band powers
@@ -134,17 +134,18 @@ if __name__ == "__main__":
 
                 #print('Delta: ', band_powers[Band.Delta], ' Theta: ', band_powers[Band.Theta],
                     #' Alpha: ', band_powers[Band.Alpha], ' Beta: ', band_powers[Band.Beta])
-                
-                #if band_powers[Band.Alpha]>0:
-                    #print(band_powers[Band.Alpha])
-                #else:
-                    #print((band_powers[Band.Alpha])*-1)
+                '''
+                if band_powers[Band.Alpha]>0:
+                    print(band_powers[Band.Alpha])
+                else:
+                    print((band_powers[Band.Alpha])*-1)
+                '''
                 
                 #if band_powers[Band.Beta]>0:
                     #print(band_powers[Band.Beta])
                 #else:
                     #print((band_powers[Band.Beta])*-1)
-                
+                '''
                 if smooth_band_powers[Band.Alpha]>0:
                     print(smooth_band_powers[Band.Alpha])
                 else:
@@ -154,6 +155,8 @@ if __name__ == "__main__":
                     print(smooth_band_powers[Band.Beta])
                 else:
                     print((smooth_band_powers[Band.Beta])*-1)
+
+                '''
                 
 
                 betaWaves = smooth_band_powers[Band.Beta]
@@ -163,7 +166,7 @@ if __name__ == "__main__":
                 #features_for_model = [[smooth_band_powers[Band.Beta], smooth_band_powers[Band.Alpha]]]
 
                 features_for_model = [[betaWaves, alphaWaves]]
-                print(features_for_model)
+                #print(features_for_model)
 
                 if 'svmm_model' not in globals():  
                     svmm_model, scaler = train_svmm_model()
@@ -197,24 +200,32 @@ if __name__ == "__main__":
                 # theta_metric = smooth_band_powers[Band.Theta] / \
                 #     smooth_band_powers[Band.Alpha]
                 # print('Theta Relaxation: ', theta_metric)
-            
+
             most_frequent_guess = most_frequent(guesses)
-            print(most_frequent_guess)
 
             
+
             if most_frequent_guess =="('Airplane',)":
-                print("A")
+                print("C")
             elif most_frequent_guess =="('Ball Bouncing',)":
                 print("B")
-            elif most_frequent_guess=="('Calendar',)":
-                print("C")
             else:
-                print('Error: Most Frequent Guesses = ' + str(most_frequent_guess))
-                #print("Error")
+                #most_frequent_guess=="('Calendar',)":
+                print("C")
+
             
+            
+            #else:
+                #print(str(most_frequent_guess))
+                #print("Error")
+
+            
+            
+            #print(most_frequent_guess)
+
 
             counter+=1
-            if counter>100:
+            if counter>0:
                 exit()
     except KeyboardInterrupt:
         print('Closing!')
